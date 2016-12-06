@@ -52,6 +52,14 @@ module Spree
           @product.property(prop.to_s)
         end
       end
+
+      @sale_price_calculator ||= Rails.configuration.try(:solidus_product_feed_sale_price_calculator)&.new
+      # Include sale price and effective date if given an object for them in the config or overrides for them found
+      # in the products properties.
+      @has_sale_price_info = @sale_price_calculator.present? || %w(sale_price_for_feed sale_price_effective_date_for_feed).map { |x| @product.property(x).present? }.all?
+      if @has_sale_price_info
+        @schema += [:sale_price, :sale_price_effective_date]
+      end
     end
 
     # Creates an <item> RSS feed entry of the
@@ -137,6 +145,24 @@ module Spree
       raise SchemaError.new("price", @product) unless @product.price
       @price ||= Spree::Money.new(@product.property(:price_for_feed) || @product.price)
       @price.money.format(symbol: false, with_currency: true)
+    end
+
+    # Gives the formatted sale_price of the product.
+    # Must be configured with an object which responds to #sale_price and #effective_date as
+    # Rails.application.config.solidus_product_feed_sale_price_calculator
+    #
+    # @return [String] the products formatted sale_price.
+    def sale_price
+      @sale_price ||= Spree::Money.new(@product.property(:sale_price_for_feed) || @sale_price_calculator.sale_price)
+      @sale_price.money.format(symbol: false, with_currency: true)
+    end
+
+    # Gives the date range within which the sale price is effective.
+    #
+    # @return [Date Range] the ISO 8601 standard date range
+    def sale_price_effective_date
+      @sale_price_effective_date ||= @product.property(:sale_price_effective_date_for_feed) || @sale_price_calculator.effective_date
+      @sale_price_effective_date
     end
 
     # Gives the URI of the product
@@ -269,6 +295,10 @@ module Spree
     # @return [TrueClass, FalseClass]
     def mpn?
       @product.property('mpn').present?
+    end
+
+    def sale_price_effective_date?
+      @product.property('sale_price_effective_date').present?
     end
   end
 end
