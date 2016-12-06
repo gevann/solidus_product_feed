@@ -135,7 +135,7 @@ module Spree
     # @return [String] the products formatted price.
     def price
       raise SchemaError.new("price", @product) unless @product.price
-      @price ||= Spree::Money.new(@product.price)
+      @price ||= Spree::Money.new(@product.property(:price_for_feed) || @product.price)
       @price.money.format(symbol: false, with_currency: true)
     end
 
@@ -143,7 +143,7 @@ module Spree
     #
     # @return [String] the uri of the product.
     def link
-      @product_url ||= @view.product_url(@product)
+      @product_url ||= @product.property(:link_for_feed) || @view.product_url(@product)
       raise SchemaError.new("link", @product) unless @product_url.present?
       @product_url
     end
@@ -170,21 +170,21 @@ module Spree
 
     # @return [String] the product sku
     def id
-      @id ||= @product.sku
+      @id ||= @product.property(:id_for_feed) || @product.sku
       raise SchemaError.new("id", @product) unless @id
       @id
     end
 
     # @return [String] the product name
     def title
-      @title ||= @product.name
+      @title ||= @product.property(:title_for_feed) || @product.name
       raise SchemaError.new("title", @product) unless @title.present?
       @title
     end
 
     # @return [String] the product description
     def description
-      @description ||= @product.description
+      @description ||= @product.property(:description_for_feed) || @product.description
       raise SchemaError.new("description", @product) unless @description.present?
       @description
     end
@@ -212,7 +212,7 @@ module Spree
     #
     # @return [String, nil] a URL of an image of the product
     def image_link
-      @images ||= @product.images.any? ? @product.images : @product.variants.flat_map { |v| v.images }
+      @images ||= @product.property(:image_link_for_feed) || @product.images.any? ? @product.images : @product.variants.flat_map { |v| v.images }
       raise SchemaError.new("image link", @product) unless @images.length > 0
       @image_link ||= @images.first.attachment.url(:large)
       @image_link
@@ -222,7 +222,7 @@ module Spree
     # @return [String] the availability status of the product.
     #   One of `in stock`, `out of stock`.
     def availability
-      @availability ||= @product.stock_items.any?(&:available?) ? 'in stock' : 'out of stock'
+      @availability ||= @product.property(:availability_for_feed) || @product.stock_items.any?(&:available?) ? 'in stock' : 'out of stock'
       raise SchemaError.new("availability", @product) unless @availability.present?
       @availability
     end
