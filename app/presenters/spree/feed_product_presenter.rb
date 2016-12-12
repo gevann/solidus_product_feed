@@ -179,19 +179,9 @@ module Spree
     # @return [String] the configured base shipping price, or
     #   the minimum shipping available for this product.
     def shipping_price
-      @shipping_price ||=
-        if bsp = Rails.configuration.try(:base_shipping_price)
-          Spree::Money.new(bsp)
-        else
-          Spree::Money.new(
-            @product.shipping_category.shipping_methods
-            .flat_map(&:shipping_rates)
-            .sort_by(&:cost)
-            .first
-            .cost)
-        end
+      @shipping_price ||= SolidusProductFeed.configuration.shipping_price_class.new.price(@product)
       raise SchemaError unless @shipping_price.present?
-      @shipping_price.money.format(symbol: false, with_currency: true)
+      Spree::Money.new(@shipping_price).money.format(symbol: false, with_currency: true)
     end
 
     # @return [String] the product sku

@@ -114,6 +114,22 @@ RSpec.describe Spree::FeedProductPresenter do
       expect(subject).to eq(Spree::Money.new(cheapest_shipping_rate.cost)
         .money.format(symbol: false, with_currency: true))
     end
+    context "when a Class that responds to #price is set in the config" do
+      before do
+        class Test
+          def price product
+            99
+          end
+        end
+
+        SolidusProductFeed.configuration.shipping_price_class = "Test"
+      end
+
+      it "uses the price from the configured object" do
+        expect(subject).to eq(Spree::Money.new(99)
+          .money.format(symbol: false, with_currency: true))
+      end
+    end
   end
 
   context "when brand property exists" do
