@@ -210,8 +210,7 @@ module Spree
     #
     # @return [String] the product condition.
     def condition
-      @condition ||=
-        Rails.configuration.try(:base_product_condition) || @product.property('condition') || 'new'
+      @condition ||= @product.property('condition') || SolidusProductFeed.configuration.base_condition
       raise SchemaError.new("condition", @product) unless @condition.present?
       @condition
     end

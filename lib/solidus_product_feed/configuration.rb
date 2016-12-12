@@ -15,10 +15,16 @@ module SolidusProductFeed
     # @return [Class] a class with the same public interfaces
     #   as SolidusProductFeed::ShippingPrice.
     attr_writer :shipping_price_class
+    attr_writer :base_condition
 
     def shipping_price_class
       @shipping_price_class ||= '::SolidusProductFeed::ShippingPrice'
       @shipping_price_class.constantize
+    end
+
+    def base_condition
+      @base_condition ||= "new"
+      @base_condition
     end
   end
 end
