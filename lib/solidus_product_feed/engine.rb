@@ -18,3 +18,5 @@ module SolidusProductFeed
     config.to_prepare(&method(:activate).to_proc)
   end
 end
+
+require 'solidus_product_feed/configuration'
