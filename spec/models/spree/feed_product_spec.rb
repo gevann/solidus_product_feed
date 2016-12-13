@@ -32,11 +32,6 @@ RSpec.describe Spree::FeedProductPresenter do
                                      property: category_property,
                                      value: 'test value' }
 
-  let!(:product_condition_property) { create :product_property,
-                                     product: product,
-                                     property: condition_property,
-                                     value: 'refurbished' }
-
   let(:feed_product) { described_class.new(ActionView::Base.new, product) }
 
   describe "#id" do
@@ -54,7 +49,7 @@ RSpec.describe Spree::FeedProductPresenter do
 
   describe "#condition" do
     subject { feed_product.send :condition }
-    it { is_expected.to eq "refurbished" }
+    it { is_expected.to eq "new" }
   end
 
   describe "#price" do
