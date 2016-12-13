@@ -47,6 +47,11 @@ module SolidusProductFeed
       @tax_rate_class.constantize
     end
 
+    def availability_class
+      @availability_class ||= '::SolidusProductFeed::Availability'
+      @availability_class.constantize
+    end
+
     def base_condition
       @base_condition ||= "new"
       @base_condition

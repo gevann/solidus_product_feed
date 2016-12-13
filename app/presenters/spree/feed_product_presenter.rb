@@ -237,7 +237,9 @@ module Spree
     # @return [String] the availability status of the product.
     #   One of `in stock`, `out of stock`.
     def availability
-      @availability ||= @product.property(:availability_for_feed) || @product.stock_items.any?(&:available?) ? 'in stock' : 'out of stock'
+      @availability ||=
+        (@product.property(:availability_for_feed) ||
+        SolidusProductFeed.configuration.availability_class.new.availability(@product))
       raise SchemaError.new("availability", @product) unless @availability.present?
       @availability
     end
