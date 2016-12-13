@@ -57,7 +57,7 @@ module Spree
       # Include sale price and effective date if given an object
       # for them in the config or overrides for them found
       # in the products properties.
-      if @sale_obj.sale_data_present? @product || %w(sale_price_for_feed sale_price_effective_date_for_feed).map { |x| @product.property(x).present? }.all?
+      if @sale_obj.sale_data_present?(@product) || %w(sale_price_for_feed sale_price_effective_date_for_feed).map { |x| @product.property(x).present? }.all?
         @schema += [:sale_price, :sale_price_effective_date]
       end
     end
@@ -138,12 +138,24 @@ module Spree
       end
     end
 
+    # Returns the value of any product property ending in '_for_feed'.
+    # Uses the name of the calling function as a prefix, and '_for_feed' as
+    # a suffix for the property to look up.
+    #
+    # @param backup the value to use if no override is found.
+    def override(backup)
+      the_caller = caller_locations[0].label
+      override_val = @product.property("#{the_caller}_for_feed".to_sym)
+      return override_val if override_val.present?
+      backup
+    end
+
     # Gives the formatted price of the product
     #
     # @return [String] the products formatted price.
     def price
       raise SchemaError.new("price", @product) unless @product.price
-      @price ||= Spree::Money.new(@product.property(:price_for_feed) || @product.price)
+      @price ||= Spree::Money.new(override(@product.price))
       @price.money.format(symbol: false, with_currency: true)
     end
 
@@ -153,7 +165,7 @@ module Spree
     #
     # @return [String] the products formatted sale_price.
     def sale_price
-      @sale_price ||= Spree::Money.new(@product.property(:sale_price_for_feed) || @sale_obj.price(@product))
+      @sale_price ||= Spree::Money.new(override(@sale_obj.price(@product)))
       @sale_price.money.format(symbol: false, with_currency: true)
     end
 
@@ -161,7 +173,7 @@ module Spree
     #
     # @return [Date Range] the ISO 8601 standard date range
     def sale_price_effective_date
-      @sale_effective_date ||= (@product.property(:sale_price_effective_date_for_feed) || @sale_obj.effective_date(@product))
+      @sale_effective_date ||= override(@sale_obj.effective_date(@product))
       @sale_effective_date
     end
 
@@ -169,7 +181,7 @@ module Spree
     #
     # @return [String] the uri of the product.
     def link
-      @product_url ||= @product.property(:link_for_feed) || @view.product_url(@product)
+      @product_url ||= override(@view.product_url(@product))
       raise SchemaError.new("link", @product) unless @product_url.present?
       @product_url
     end
@@ -186,21 +198,21 @@ module Spree
 
     # @return [String] the product sku
     def id
-      @id ||= @product.property(:id_for_feed) || @product.sku
+      @id ||= override(@product.sku)
       raise SchemaError.new("id", @product) unless @id
       @id
     end
 
     # @return [String] the product name
     def title
-      @title ||= @product.property(:title_for_feed) || @product.name
+      @title ||= override(@product.name)
       raise SchemaError.new("title", @product) unless @title.present?
       @title
     end
 
     # @return [String] the product description
     def description
-      @description ||= @product.property(:description_for_feed) || @product.description
+      @description ||= override(@product.description)
       raise SchemaError.new("description", @product) unless @description.present?
       @description
     end
@@ -210,7 +222,7 @@ module Spree
     #
     # @return [String] the product condition.
     def condition
-      @condition ||= @product.property('condition') || SolidusProductFeed.configuration.base_condition
+      @condition ||= override(SolidusProductFeed.configuration.base_condition)
       raise SchemaError.new("condition", @product) unless @condition.present?
       @condition
     end
@@ -227,7 +239,7 @@ module Spree
     #
     # @return [String, nil] a URL of an image of the product
     def image_link
-      @images ||= @product.property(:image_link_for_feed) || @product.images.any? ? @product.images : @product.variants.flat_map { |v| v.images }
+      @images ||= override(@product.images.any? ? @product.images : @product.variants.flat_map { |v| v.images })
       raise SchemaError.new("image link", @product) unless @images.length > 0
       @image_link ||= @images.first.attachment.url(:large)
       @image_link
@@ -238,8 +250,7 @@ module Spree
     #   One of `in stock`, `out of stock`.
     def availability
       @availability ||=
-        (@product.property(:availability_for_feed) ||
-        SolidusProductFeed.configuration.availability_class.new.availability(@product))
+        override(SolidusProductFeed.configuration.availability_class.new.availability(@product))
       raise SchemaError.new("availability", @product) unless @availability.present?
       @availability
     end
