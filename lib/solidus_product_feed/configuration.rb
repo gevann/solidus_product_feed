@@ -22,6 +22,12 @@ module SolidusProductFeed
     # @return [Class] a class with the same public interfaces
     #   as SolidusProductFeed::TaxRate
     attr_writer :tax_rate_class
+
+    # Allows providing your own class for setting a sort-wide default product
+    # condition.
+    #
+    # @!attribute [rw] base_condition
+    # @return [String] the condition of the product. One of 'new', 'used', 'refurbished'
     attr_writer :base_condition
 
     def shipping_price_class
