@@ -15,6 +15,12 @@ module SolidusProductFeed
     # @return [Class] a class with the same public interfaces
     #   as SolidusProductFeed::ShippingPrice.
     attr_writer :shipping_price_class
+
+    # Allows providing your own class for calculating tax rate.
+    #
+    # @!attribute [rw] tax_rate_class
+    # @return [Class] a class with the same public interfaces
+    #   as SolidusProductFeed::TaxRate
     attr_writer :tax_rate_class
     attr_writer :base_condition
 
