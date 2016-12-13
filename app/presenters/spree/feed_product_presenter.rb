@@ -138,25 +138,40 @@ module Spree
       end
     end
 
-    # Returns the value of any product property ending in '_for_feed'.
+    # Sets the instance variable @`calling_function_name`
+    # to the value of any product property ending in '_for_feed', if it exists, or
+    # the value of the block given.
+    # Raises a SchemaError if no value found, and returns the value set.
     # Uses the name of the calling function as a prefix, and '_for_feed' as
     # a suffix for the property to look up.
     #
     # @param backup the value to use if no override is found.
-    def override(backup)
+    # @raise [SchemaError] if no value is found for the give schema entry.
+    # @return the value of @`calling_function_name`.
+    def override(&block)
       the_caller = caller_locations[0].label
+      val = self.instance_variable_get("@#{the_caller}")
+      return val if val.present?
       override_val = @product.property("#{the_caller}_for_feed".to_sym)
-      return override_val if override_val.present?
-      backup
+      if override_val.present?
+        self.instance_variable_set("@#{the_caller}", override_val)
+      else
+        self.instance_variable_set("@#{the_caller}", block.call)
+      end
+
+      val = self.instance_variable_get("@#{the_caller}")
+      raise SchemaError.new("#{the_caller}", @product) unless val
+      val
     end
 
     # Gives the formatted price of the product
     #
     # @return [String] the products formatted price.
     def price
-      raise SchemaError.new("price", @product) unless @product.price
-      @price ||= Spree::Money.new(override(@product.price))
-      @price.money.format(symbol: false, with_currency: true)
+      override do
+        Spree::Money.new(@product.price)
+          .money.format(symbol: false, with_currency: true)
+      end
     end
 
     # Gives the formatted sale_price of the product.
@@ -165,25 +180,24 @@ module Spree
     #
     # @return [String] the products formatted sale_price.
     def sale_price
-      @sale_price ||= Spree::Money.new(override(@sale_obj.price(@product)))
-      @sale_price.money.format(symbol: false, with_currency: true)
+      override do
+        Spree::Money.new(@sale_obj.price(@product))
+          .money.format(symbol: false, with_currency: true)
+      end
     end
 
     # Gives the date range within which the sale price is effective.
     #
     # @return [Date Range] the ISO 8601 standard date range
     def sale_price_effective_date
-      @sale_effective_date ||= override(@sale_obj.effective_date(@product))
-      @sale_effective_date
+      override { @sale_obj.effective_date(@product) }
     end
 
     # Gives the URI of the product
     #
     # @return [String] the uri of the product.
     def link
-      @product_url ||= override(@view.product_url(@product))
-      raise SchemaError.new("link", @product) unless @product_url.present?
-      @product_url
+      override { @view.product_url(@product) }
     end
 
     # Gives the formatted price of shipping for the product
@@ -191,30 +205,25 @@ module Spree
     # @return [String] the configured base shipping price, or
     #   the minimum shipping available for this product.
     def shipping_price
-      @shipping_price ||= SolidusProductFeed.configuration.shipping_price_class.new.price(@product)
-      raise SchemaError unless @shipping_price.present?
-      Spree::Money.new(@shipping_price).money.format(symbol: false, with_currency: true)
+      override do
+        Spree::Money.new(SolidusProductFeed.configuration.shipping_price_class.new.price(@product))
+          .money.format(symbol: false, with_currency: true)
+      end
     end
 
     # @return [String] the product sku
     def id
-      @id ||= override(@product.sku)
-      raise SchemaError.new("id", @product) unless @id
-      @id
+      override { @product.sku }
     end
 
     # @return [String] the product name
     def title
-      @title ||= override(@product.name)
-      raise SchemaError.new("title", @product) unless @title.present?
-      @title
+      override { @product.name }
     end
 
     # @return [String] the product description
     def description
-      @description ||= override(@product.description)
-      raise SchemaError.new("description", @product) unless @description.present?
-      @description
+      override { @product.description }
     end
 
     # Returns the configured basic condition for products, or
@@ -222,9 +231,7 @@ module Spree
     #
     # @return [String] the product condition.
     def condition
-      @condition ||= override(SolidusProductFeed.configuration.base_condition)
-      raise SchemaError.new("condition", @product) unless @condition.present?
-      @condition
+      override { SolidusProductFeed.configuration.base_condition }
     end
 
     # Computes whether this product has a brand
@@ -239,20 +246,18 @@ module Spree
     #
     # @return [String, nil] a URL of an image of the product
     def image_link
-      @images ||= override(@product.images.any? ? @product.images : @product.variants.flat_map { |v| v.images })
-      raise SchemaError.new("image link", @product) unless @images.length > 0
-      @image_link ||= @images.first.attachment.url(:large)
-      @image_link
+      override do
+        images =
+          @product.images.any? ? @product.images : @product.variants.flat_map { |v| v.images }
+        images == [] ? nil : images.first.attachment.url(:large)
+      end
     end
 
     # Computes the availability status of the product
     # @return [String] the availability status of the product.
     #   One of `in stock`, `out of stock`.
     def availability
-      @availability ||=
-        override(SolidusProductFeed.configuration.availability_class.new.availability(@product))
-      raise SchemaError.new("availability", @product) unless @availability.present?
-      @availability
+      override { SolidusProductFeed.configuration.availability_class.new.availability(@product) }
     end
 
     # Returns the most frequently used tax rate for this item. If no tax rate
@@ -260,9 +265,7 @@ module Spree
     #
     # @return [BigDecimal] the tax rate in precent.
     def tax_rate
-      @tax_rate ||= SolidusProductFeed.configuration.tax_rate_class.new.tax_rate(@product)
-      raise SchemaError.new("tax rate", @product) unless @tax_rate.present?
-      @tax_rate
+      override { SolidusProductFeed.configuration.tax_rate_class.new.tax_rate(@product) }
     end
 
     # Computes whether or not a product property for brand is present.
