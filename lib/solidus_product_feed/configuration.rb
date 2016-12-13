@@ -30,6 +30,13 @@ module SolidusProductFeed
     # @return [String] the condition of the product. One of 'new', 'used', 'refurbished'
     attr_writer :base_condition
 
+    # Allows providing your own class for calculating product availability.
+    #
+    # @!attribute [rw] availability_class
+    # @return [Class] a class with the same public interfaces
+    #   as SolidusProductFeed::Availability.
+    attr_writer :availability_class
+
     def shipping_price_class
       @shipping_price_class ||= '::SolidusProductFeed::ShippingPrice'
       @shipping_price_class.constantize
