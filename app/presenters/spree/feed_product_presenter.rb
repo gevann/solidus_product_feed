@@ -53,11 +53,11 @@ module Spree
         end
       end
 
-      @sale_price_calculator ||= Rails.configuration.try(:solidus_product_feed_sale_price_calculator)&.new
-      # Include sale price and effective date if given an object for them in the config or overrides for them found
+      @sale_obj ||= SolidusProductFeed.configuration.sale_class.new
+      # Include sale price and effective date if given an object
+      # for them in the config or overrides for them found
       # in the products properties.
-      @has_sale_price_info = @sale_price_calculator.present? || %w(sale_price_for_feed sale_price_effective_date_for_feed).map { |x| @product.property(x).present? }.all?
-      if @has_sale_price_info
+      if @sale_obj.sale_data_present? @product || %w(sale_price_for_feed sale_price_effective_date_for_feed).map { |x| @product.property(x).present? }.all?
         @schema += [:sale_price, :sale_price_effective_date]
       end
     end
@@ -153,7 +153,7 @@ module Spree
     #
     # @return [String] the products formatted sale_price.
     def sale_price
-      @sale_price ||= Spree::Money.new(@product.property(:sale_price_for_feed) || @sale_price_calculator.sale_price)
+      @sale_price ||= Spree::Money.new(@product.property(:sale_price_for_feed) || @sale_obj.price(@product))
       @sale_price.money.format(symbol: false, with_currency: true)
     end
 
@@ -161,8 +161,8 @@ module Spree
     #
     # @return [Date Range] the ISO 8601 standard date range
     def sale_price_effective_date
-      @sale_price_effective_date ||= @product.property(:sale_price_effective_date_for_feed) || @sale_price_calculator.effective_date
-      @sale_price_effective_date
+      @sale_effective_date ||= (@product.property(:sale_price_effective_date_for_feed) || @sale_obj.effective_date(@product))
+      @sale_effective_date
     end
 
     # Gives the URI of the product

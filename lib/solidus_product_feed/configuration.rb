@@ -37,6 +37,12 @@ module SolidusProductFeed
     #   as SolidusProductFeed::Availability.
     attr_writer :availability_class
 
+    # Allows providing yoru own class for calculating the product's sale price.
+    #
+    # @!attribute [rw] sale_class [Class] a class with the same
+    #   public interface as SolidusProductFeed::Sale
+    attr_writer :sale_class
+
     def shipping_price_class
       @shipping_price_class ||= '::SolidusProductFeed::ShippingPrice'
       @shipping_price_class.constantize
@@ -55,6 +61,11 @@ module SolidusProductFeed
     def base_condition
       @base_condition ||= "new"
       @base_condition
+    end
+
+    def sale_class
+      @sale_class ||= '::SolidusProductFeed::Sale'
+      @sale_class.constantize
     end
   end
 end
