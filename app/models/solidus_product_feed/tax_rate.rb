@@ -1,5 +1,12 @@
 module SolidusProductFeed
   class TaxRate
+
+    # Calculates the most commonly applied tax rate to the given product, if any.
+    # If none have yet to be applied, returns the first tax rate available to
+    # this product.
+    #
+    # @param product [Spree::Product] the product to calculate the tax rate for.
+    # @return [FixNum] the tax rate as a percentage.
     def tax_rate(product)
       rates = Spree::TaxRate.joins(:adjustments)
         .joins("INNER JOIN spree_line_items "\
