@@ -19,7 +19,8 @@ module SolidusProductFeed
           tr_id = rates.count.map(&:flatten).sort_by { |id, count| -count }.first.first
           Spree::TaxRate.find(tr_id).amount * 100.0
         else
-          product.master.tax_category.tax_rates.first.amount * 100.0
+          tr = product.master.tax_category.tax_rates.first
+          tr.amount * 100.0 if tr.present?
         end
     end
   end
