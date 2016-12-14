@@ -231,7 +231,7 @@ module Spree
     #
     # @return [String] the product condition.
     def condition
-      override { SolidusProductFeed.configuration.base_condition }
+      override { SolidusProductFeed.configuration.condition_class.new.condition(@product) }
     end
 
     # Computes whether this product has a brand

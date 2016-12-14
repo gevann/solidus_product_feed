@@ -23,6 +23,13 @@ module SolidusProductFeed
     #   as SolidusProductFeed::TaxRate
     attr_writer :tax_rate_class
 
+    # Allows providing your own class for calculating product condition.
+    #
+    # @!attribute [rw] condition_class
+    # @return [Class] a class with the same public interface
+    #   as SolidusProductFeed::Condition
+    attr_writer :condition_class
+
     # Allows providing your own class for setting a sort-wide default product
     # condition.
     #
@@ -56,6 +63,11 @@ module SolidusProductFeed
     def availability_class
       @availability_class ||= '::SolidusProductFeed::Availability'
       @availability_class.constantize
+    end
+
+    def condition_class
+      @condition_class ||= '::SolidusProductFeed::Condition'
+      @condition_class.constantize
     end
 
     def base_condition
