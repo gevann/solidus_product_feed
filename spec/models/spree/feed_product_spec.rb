@@ -220,32 +220,24 @@ RSpec.describe Spree::FeedProductPresenter do
   describe "#tax_rate" do
     subject { feed_product.send :tax_rate }
 
-    let!(:tax_rate_1) { create :tax_rate, tax_category: product.tax_category }
-    let!(:tax_rate_2) { create :tax_rate, tax_category: product.tax_category,
-                       amount: 0.5 }
-    context "when there are tax rates on line items for this product" do
-      let(:order) { create :order }
-      let(:line_item_rate_1) { create :line_item, product: product,
-                                variant: product.master }
+    context "when there is a tax rate in the database" do
+      let!(:tax_rate_1) { create :tax_rate, tax_category: product.tax_category }
 
-      let(:line_items_rate_2) { create_list :line_item, 3, product: product,
-                                variant: product.master }
+      it "sets the tax_rate" do
+        expect(feed_product.instance_variable_get(:@tax_rate)).to be_nil
+        subject
+        expect(feed_product.instance_variable_get(:@tax_rate)).not_to be_nil
+      end
 
-      let!(:adjustment_1) { create :tax_adjustment, order: order,
-                            adjustable: line_item_rate_1, source: tax_rate_1 }
-
-      let!(:adjustment_2) {
-        line_items_rate_2.map do |line_item_rate_2|
-          create :tax_adjustment, order: order, adjustable: line_item_rate_2,
-            source: tax_rate_2
-        end
-      }
-
-      it { is_expected.to eq tax_rate_2.amount * 100.0 }
+      it "returns a BigDecimal" do
+        expect(subject.is_a?(BigDecimal)).to be_truthy
+      end
     end
 
-    context "when there are no tax rates applied to any line item for this product" do
-      it { is_expected.to eq tax_rate_1.amount * 100.0 }
+    context "when there is no tax rate in the database" do
+      it "raises a SchemaError" do
+        expect { subject }.to raise_error(Spree::SchemaError)
+      end
     end
 
   end
