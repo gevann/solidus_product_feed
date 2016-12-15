@@ -79,5 +79,11 @@ module SolidusProductFeed
       @sale_class ||= '::SolidusProductFeed::Sale'
       @sale_class.constantize
     end
+
+    def reset!
+      self.instance_variables.each do |var|
+        self.instance_variable_set(var, nil)
+      end
+    end
   end
 end
