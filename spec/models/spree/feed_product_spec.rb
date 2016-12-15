@@ -34,6 +34,10 @@ RSpec.describe Spree::FeedProductPresenter do
 
   let(:feed_product) { described_class.new(ActionView::Base.new, product) }
 
+  before(:each) do
+    SolidusProductFeed.configuration.reset!
+  end
+
   describe "#id" do
     subject { feed_product.send :id }
 
